@@ -1,9 +1,11 @@
 import torch
 import torchaudio
 import os
+from utils import *
 
 GENRES = ["blues", "classical", "country", "disco", "hiphop", "jazz", "metal", "pop", "reggae", "rock"]
 GTZAN_SAMPLE_RATE = 22050
+WAVEFORM_LENGTH = 30 * 22050 # 30 seconds
 
 gain_transforms = [torchaudio.transforms.Vol(g) for g in [1, 0.5, 1.5]]
 pitch_transforms = [torchaudio.transforms.PitchShift(GTZAN_SAMPLE_RATE, n) for n in [0, -2, 2]]
@@ -23,21 +25,26 @@ for genre in GENRES:
   raw_data_filenames = os.listdir("GTZAN/{}".format(genre))
   for raw_data_filename in raw_data_filenames:
     try:
-      raw_sample, _ = torchaudio.load("GTZAN/{}".format(genre) + "/" + raw_data_filename)
+      raw_sample = load_wav_file("GTZAN/{}".format(genre) + "/" + raw_data_filename)
     except:
       continue
     for gain_transform in gain_transforms:
       for pitch_shift in pitch_transforms:
-        output_filename = output_folder + "/{}_{}.wav".format(genre, i)
+        output_filename = output_folder + "/{}_{}.tiff".format(genre, i)
         if os.path.exists(output_filename):
           i += 1
           total_augmented_samples += 1
           iterations_completed += 1
-          continue
+          # continue
           
         gain_augmented_sample = gain_transform(raw_sample)
         full_augmented_sample = pitch_shift(gain_augmented_sample)
-        torchaudio.save(output_filename, full_augmented_sample.detach(), GTZAN_SAMPLE_RATE)
+        sample = full_augmented_sample[:, :WAVEFORM_LENGTH]
+        
+        spectrogram = wav_to_spectrogram(sample)
+        
+        save_spectrogram_img(spectrogram, output_filename)
+
         total_augmented_samples += 1
         i += 1
         iterations_completed += 1
