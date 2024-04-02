@@ -238,10 +238,10 @@ class VQVAE(nn.Module):
         vec_dist_fn = lambda a, b : (a-b) ** 2
         # apply embedding loss to quantized vector or pre-quantized vector?
         # apply to both top level and bottom level quantized vectors or no?
-        embedding_vector_batches = [enc_b, enc_t] #[quant_b, quant_t]
-        bottom_margin_amplitude = 1.0
+        embedding_vector_batches = [quant_b, quant_t]#[enc_b, enc_t] #[quant_b, quant_t]
+        bottom_margin_amplitude = 1e-3
         bottom_level_margin = torch.ones(embedding_vector_batches[0][0].shape) * bottom_margin_amplitude
-        top_margin_amplitude = 1.0
+        top_margin_amplitude = 1e-3
         top_level_margin = torch.ones(embedding_vector_batches[1][0].shape) * top_margin_amplitude
         bottom_level_N = torch.full(embedding_vector_batches[0][0].shape, fill_value=True) # dimension indices where distances should count towards loss
         top_level_N = torch.full(embedding_vector_batches[1][0].shape, fill_value=True) # dimension indices where distances should count towards loss

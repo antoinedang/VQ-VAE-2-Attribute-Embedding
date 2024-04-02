@@ -25,7 +25,7 @@ def train(epoch, loader, model, optimizer, scheduler, device):
     criterion = nn.MSELoss()
 
     latent_loss_weight = 0.25
-    attr_embedding_loss_weight = 0.1
+    attr_embedding_loss_weight = 10
 
     mse_sum = 0
     mse_n = 0
