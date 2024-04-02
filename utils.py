@@ -8,17 +8,19 @@ import random
 
 GENRES = ["blues", "classical", "country", "disco", "hiphop", "jazz", "metal", "pop", "reggae", "rock"]
 GTZAN_SAMPLE_RATE = 22050
-SPEC_TRANSFORM = torchaudio.transforms.MelSpectrogram(sample_rate=GTZAN_SAMPLE_RATE, n_mels=256, n_fft=5170)
+N_MELS = 1024
+N_FFTS = 1293
+SPEC_TRANSFORM = torchaudio.transforms.MelSpectrogram(sample_rate=GTZAN_SAMPLE_RATE, n_mels=N_MELS, n_fft=N_FFTS)
     
 def wav_to_spectrogram(sample):
-    return SPEC_TRANSFORM(sample)
+    return SPEC_TRANSFORM(sample).detach()
     
 def spectrogram_to_wav(spectrogram):
     print("Inverting Mel Scale...")
-    inverse_transform = torchaudio.transforms.InverseMelScale(n_mels=256, sample_rate=GTZAN_SAMPLE_RATE, n_stft=int((5170//2)+1))
+    inverse_transform = torchaudio.transforms.InverseMelScale(n_mels=N_MELS, sample_rate=GTZAN_SAMPLE_RATE, n_stft=int((N_FFTS//2)+1))
     spectrogram = inverse_transform(spectrogram)
     print("Converting to waveform...")
-    grifflim_transform = torchaudio.transforms.GriffinLim(n_fft=5170)
+    grifflim_transform = torchaudio.transforms.GriffinLim(n_fft=N_FFTS)
     return grifflim_transform(spectrogram)
     
 def save_spectrogram_img(spectrogram, path):
@@ -58,7 +60,8 @@ if __name__ == "__main__":
     random_spectrogram = "AugmentedGTZAN/{}/{}_{}.tiff".format(random_genre, random_genre, random_i)
     print("Loading image...")
     spectrogram = load_spectrogram_img(random_spectrogram)
-    print("Starting conversion.")
+    print("Starting conversion. (takes a while)")
     sample = spectrogram_to_wav(spectrogram)
+    sample = torch.unsqueeze(sample, dim=0)
     print("Saving to file...")
     torchaudio.save("temp.wav", sample, sample_rate=GTZAN_SAMPLE_RATE)

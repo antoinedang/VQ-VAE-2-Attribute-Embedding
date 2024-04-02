@@ -31,11 +31,11 @@ for genre in GENRES:
     for gain_transform in gain_transforms:
       for pitch_shift in pitch_transforms:
         output_filename = output_folder + "/{}_{}.tiff".format(genre, i)
-        if os.path.exists(output_filename):
-          i += 1
-          total_augmented_samples += 1
-          iterations_completed += 1
-          # continue
+        # if os.path.exists(output_filename):
+        #   i += 1
+        #   total_augmented_samples += 1
+        #   iterations_completed += 1
+        #   continue
           
         gain_augmented_sample = gain_transform(raw_sample)
         full_augmented_sample = pitch_shift(gain_augmented_sample)
