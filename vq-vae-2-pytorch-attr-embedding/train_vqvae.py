@@ -14,6 +14,9 @@ from vqvae import VQVAE
 from scheduler import CycleScheduler
 import distributed as dist
 
+from PIL import Image
+
+from tiff_dataset import TIFFDataset, MAX_POSSIBLE_SPECTROGRAM_VALUE
 
 def train(epoch, loader, model, optimizer, scheduler, device):
     if dist.is_primary():
@@ -22,7 +25,7 @@ def train(epoch, loader, model, optimizer, scheduler, device):
     criterion = nn.MSELoss()
 
     latent_loss_weight = 0.25
-    sample_size = 25
+    attr_embedding_loss_weight = 0.1
 
     mse_sum = 0
     mse_n = 0
@@ -32,10 +35,10 @@ def train(epoch, loader, model, optimizer, scheduler, device):
 
         img = img.to(device)
 
-        out, latent_loss = model(img)
+        out, latent_loss, attr_embedding_loss = model(img, label)
         recon_loss = criterion(out, img)
         latent_loss = latent_loss.mean()
-        loss = recon_loss + latent_loss_weight * latent_loss
+        loss = recon_loss + latent_loss_weight * latent_loss + attr_embedding_loss * attr_embedding_loss_weight
         loss.backward()
 
         if scheduler is not None:
@@ -57,7 +60,7 @@ def train(epoch, loader, model, optimizer, scheduler, device):
             loader.set_description(
                 (
                     f"epoch: {epoch + 1}; mse: {recon_loss.item():.5f}; "
-                    f"latent: {latent_loss.item():.3f}; avg mse: {mse_sum / mse_n:.5f}; "
+                    f"latent: {latent_loss.item():.5f}; attribute: {attr_embedding_loss.item() * attr_embedding_loss_weight:.5f}; avg mse: {mse_sum / mse_n:.5f}; "
                     f"lr: {lr:.5f}"
                 )
             )
@@ -65,43 +68,33 @@ def train(epoch, loader, model, optimizer, scheduler, device):
             if i % 100 == 0:
                 model.eval()
 
-                sample = img[:sample_size]
+                random_idx = torch.randint(0, img.shape[0], size=(1,))
+                sample = img[random_idx]
+                sample_label = label[random_idx]
 
                 with torch.no_grad():
-                    out, _ = model(sample)
+                    out, _, _ = model(sample, sample_label)
+                
+                side_by_side_img = (torch.hstack([torch.squeeze(sample), torch.squeeze(out)]).cpu().numpy() + 0.5) * MAX_POSSIBLE_SPECTROGRAM_VALUE
 
-                utils.save_image(
-                    torch.cat([sample, out], 0),
-                    f"sample/{str(epoch + 1).zfill(5)}_{str(i).zfill(5)}.png",
-                    nrow=sample_size,
-                    normalize=True,
-                    range=(-1, 1),
-                )
+                img = Image.fromarray(side_by_side_img)
+                img.save(f"{args.eval_sample_folder}/{str(epoch + 1).zfill(5)}_{str(i).zfill(5)}.tiff", format='TIFF')
 
                 model.train()
 
 
 def main(args):
-    device = "cuda"
+    device = args.device
 
     args.distributed = dist.get_world_size() > 1
 
-    transform = transforms.Compose(
-        [
-            transforms.Resize(args.size),
-            transforms.CenterCrop(args.size),
-            transforms.ToTensor(),
-            transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
-        ]
-    )
-
-    dataset = datasets.ImageFolder(args.path, transform=transform)
+    dataset = TIFFDataset(args.path)
     sampler = dist.data_sampler(dataset, shuffle=True, distributed=args.distributed)
     loader = DataLoader(
         dataset, batch_size = args.batch_size // args.n_gpu, sampler=sampler, num_workers=2
     )
 
-    model = VQVAE().to(device)
+    model = VQVAE(device=device).to(device)
 
     if args.distributed:
         model = nn.parallel.DistributedDataParallel(
@@ -125,7 +118,7 @@ def main(args):
         train(i, loader, model, optimizer, scheduler, device)
 
         if dist.is_primary():
-            torch.save(model.state_dict(), f"checkpoint/vqvae_{str(i + 1).zfill(3)}.pt")
+            torch.save(model.state_dict(), f"{args.checkpoint_folder}/vqvae_{str(i + 1).zfill(3)}.pt")
 
 
 if __name__ == "__main__":
@@ -142,7 +135,11 @@ if __name__ == "__main__":
     parser.add_argument("--size", type=int, default=256)
     parser.add_argument("--epoch", type=int, default=560)
     parser.add_argument("--lr", type=float, default=3e-4)
+    parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--sched", type=str)
+    parser.add_argument("--device", type=str, default="cuda")
+    parser.add_argument("--eval-sample-folder", type=str, default="eval_samples_attr_embedding")
+    parser.add_argument("--checkpoint-folder", type=str, default="checkpoints_attr_embedding")
     parser.add_argument("path", type=str)
 
     args = parser.parse_args()

@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
+import numpy as np
 
 import distributed as dist_fn
 
@@ -164,13 +165,14 @@ class Decoder(nn.Module):
 class VQVAE(nn.Module):
     def __init__(
         self,
-        in_channel=3,
+        in_channel=1,
         channel=128,
         n_res_block=2,
         n_res_channel=32,
         embed_dim=64,
         n_embed=512,
         decay=0.99,
+        device="cuda"
     ):
         super().__init__()
 
@@ -194,14 +196,15 @@ class VQVAE(nn.Module):
             n_res_channel,
             stride=4,
         )
+        self.device = device
 
-    def forward(self, input):
-        quant_t, quant_b, diff, _, _ = self.encode(input)
+    def forward(self, input, label):
+        quant_t, quant_b, diff, attr_diff, _, _ = self.encode(input, label)
         dec = self.decode(quant_t, quant_b)
 
-        return dec, diff
+        return dec, diff, attr_diff
 
-    def encode(self, input):
+    def encode(self, input, label):
         enc_b = self.enc_b(input)
         enc_t = self.enc_t(enc_b)
 
@@ -217,8 +220,63 @@ class VQVAE(nn.Module):
         quant_b, diff_b, id_b = self.quantize_b(quant_b)
         quant_b = quant_b.permute(0, 3, 1, 2)
         diff_b = diff_b.unsqueeze(0)
+        
+        #### ADDED TO ORIGINAL IMPLEMENTATION
+        
+        # calculate how many samples in the batch we will enforce attribute embeddings for
+        nb = input.shape[0]
+        num_pairs_to_compute_loss_for = int((nb*(nb - 1)) / 2)
+        
+        # TODO: review
+        # ASSUMPTIONS:
+        # - no dimensions are unregularized
+        # - distance function is squared euclidian distance
+        # - samples are negative only via class labels (not from feature comparisons)
+        # - margin across feature dimensions is the same (all features should be different from one another with equal importance)
+        
+        # HYPERPARAMS
+        vec_dist_fn = lambda a, b : (a-b) ** 2
+        # apply embedding loss to quantized vector or pre-quantized vector?
+        # apply to both top level and bottom level quantized vectors or no?
+        embedding_vector_batches = [enc_b, enc_t] #[quant_b, quant_t]
+        bottom_margin_amplitude = 1.0
+        bottom_level_margin = torch.ones(embedding_vector_batches[0][0].shape) * bottom_margin_amplitude
+        top_margin_amplitude = 1.0
+        top_level_margin = torch.ones(embedding_vector_batches[1][0].shape) * top_margin_amplitude
+        bottom_level_N = torch.full(embedding_vector_batches[0][0].shape, fill_value=True) # dimension indices where distances should count towards loss
+        top_level_N = torch.full(embedding_vector_batches[1][0].shape, fill_value=True) # dimension indices where distances should count towards loss
+        
+        
+        bottom_level_margin = bottom_level_margin.to(self.device)
+        top_level_margin = top_level_margin.to(self.device)
+        bottom_level_N = bottom_level_N.to(self.device)
+        top_level_N = top_level_N.to(self.device)
+        
+        # TODO: make more efficient with a vectorized torch/numpy operation
+        attr_diff = torch.tensor(0, dtype=torch.float32).to(self.device)
+        for embeddings, margin, N in zip(embedding_vector_batches, [bottom_level_margin, top_level_margin], [bottom_level_N, top_level_N]):
+            vector_indices_to_compute_loss_for = torch.randperm(nb)[:num_pairs_to_compute_loss_for]
+            vector_idx_combs = torch.combinations(vector_indices_to_compute_loss_for)
+            for i, j in vector_idx_combs:
+                vec_a = embeddings[i]
+                vec_b = embeddings[j]
+                
+                s = 0 if label[i] == label[j] else 1
+                
+                s_vec = torch.full(vec_a.shape, fill_value=s)
+                
+                dim_dir_vec = torch.full(vec_a.shape, fill_value=(-1)**s)
+                
+                dist_a_b = vec_dist_fn(vec_a, vec_b)
+                
+                dim_dir_vec = dim_dir_vec.to(self.device)
+                s_vec = s_vec.to(self.device)
+                
+                attr_diff += torch.sum(torch.clip(dim_dir_vec * dist_a_b + s_vec * margin, min=0, max=torch.inf)[N]) / torch.sum(N)
+                         
+        #### ^^^ ADDED TO ORIGINAL IMPLEMENTATION
 
-        return quant_t, quant_b, diff_t + diff_b, id_t, id_b
+        return quant_t, quant_b, diff_t + diff_b, attr_diff, id_t, id_b
 
     def decode(self, quant_t, quant_b):
         upsample_t = self.upsample_t(quant_t)

@@ -3,8 +3,8 @@ import torchaudio
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
-from IPython.display import Audio
 import random
+import os
 
 GENRES = ["blues", "classical", "country", "disco", "hiphop", "jazz", "metal", "pop", "reggae", "rock"]
 GTZAN_SAMPLE_RATE = 22050
@@ -37,7 +37,21 @@ def load_spectrogram_img(path):
 def load_wav_file(path):
     sample, _ = torchaudio.load(path)
     return sample
-    
+
+def computeSpectrogramsMinMax(folder_path):
+    overall_max = 0
+    overall_min = 9999
+    for genre in GENRES:
+        folder = folder_path + "/{}".format(genre)
+        filenames = os.listdir(folder)
+        for filename in filenames:
+            spec = load_spectrogram_img(folder + "/" + filename)
+            overall_max = max(torch.max(spec), overall_max)
+            overall_min = min(torch.min(spec), overall_min)
+            
+            print(overall_max)
+            print(overall_min)
+            
 def plot_spectrogram(spectrogram):
     plt.figure()
     # Compute the time axis
@@ -54,6 +68,7 @@ def plot_spectrogram(spectrogram):
     plt.show()
     
 if __name__ == "__main__":
+    computeSpectrogramsMinMax("AugmentedGTZAN")
     # play a random spectrogram from the augmented dataset
     random_genre = GENRES[random.randint(0, 9)]
     random_i = random.randint(0, 800)

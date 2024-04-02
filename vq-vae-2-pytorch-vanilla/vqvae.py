@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
+import numpy as np
 
 import distributed as dist_fn
 
@@ -164,13 +165,14 @@ class Decoder(nn.Module):
 class VQVAE(nn.Module):
     def __init__(
         self,
-        in_channel=3,
+        in_channel=1,
         channel=128,
         n_res_block=2,
         n_res_channel=32,
         embed_dim=64,
         n_embed=512,
         decay=0.99,
+        device="cuda"
     ):
         super().__init__()
 
@@ -194,6 +196,7 @@ class VQVAE(nn.Module):
             n_res_channel,
             stride=4,
         )
+        self.device = device
 
     def forward(self, input):
         quant_t, quant_b, diff, _, _ = self.encode(input)
