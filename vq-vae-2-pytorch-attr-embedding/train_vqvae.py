@@ -98,7 +98,7 @@ def main(args):
     dataset = datasets.ImageFolder(args.path, transform=transform)
     sampler = dist.data_sampler(dataset, shuffle=True, distributed=args.distributed)
     loader = DataLoader(
-        dataset, batch_size=128 // args.n_gpu, sampler=sampler, num_workers=2
+        dataset, batch_size = args.batch_size // args.n_gpu, sampler=sampler, num_workers=2
     )
 
     model = VQVAE().to(device)
