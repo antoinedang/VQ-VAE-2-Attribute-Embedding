@@ -26,6 +26,9 @@ share/python-wheels/
 *.egg
 MANIFEST
 AugmentedGTZAN/
+original.wav
+reconstructed.wav
+temp.wav
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

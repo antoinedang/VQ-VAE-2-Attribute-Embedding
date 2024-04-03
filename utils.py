@@ -11,28 +11,30 @@ GTZAN_SAMPLE_RATE = 22050
 N_MELS = 512
 N_FFTS = 2586
 SPEC_TRANSFORM = torchaudio.transforms.MelSpectrogram(sample_rate=GTZAN_SAMPLE_RATE, n_mels=N_MELS, n_fft=N_FFTS)
+
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     
 def wav_to_spectrogram(sample):
-    return SPEC_TRANSFORM(sample).detach()
+    return SPEC_TRANSFORM(sample).to(DEVICE)
     
 def spectrogram_to_wav(spectrogram):
     print("Inverting Mel Scale...")
-    inverse_transform = torchaudio.transforms.InverseMelScale(n_mels=N_MELS, sample_rate=GTZAN_SAMPLE_RATE, n_stft=int((N_FFTS//2)+1))
+    inverse_transform = torchaudio.transforms.InverseMelScale(n_mels=N_MELS, sample_rate=GTZAN_SAMPLE_RATE, n_stft=int((N_FFTS//2)+1)).to(DEVICE)
     spectrogram = inverse_transform(spectrogram)
     print("Converting to waveform...")
-    grifflim_transform = torchaudio.transforms.GriffinLim(n_fft=N_FFTS)
+    grifflim_transform = torchaudio.transforms.GriffinLim(n_fft=N_FFTS).to(DEVICE)
     return grifflim_transform(spectrogram)
     
 def save_spectrogram_img(spectrogram, path):
-    img = Image.fromarray(torch.squeeze(spectrogram).numpy())
+    img = Image.fromarray(torch.squeeze(spectrogram).detach().cpu().numpy())
     img.save(path, format='TIFF')
     
 def save_wav_to_file(sample, path):
-    torchaudio.save(path, sample, sample_rate=GTZAN_SAMPLE_RATE)
+    torchaudio.save(path, sample.detach().cpu(), sample_rate=GTZAN_SAMPLE_RATE)
     
 def load_spectrogram_img(path):
     image = Image.open(path)
-    return torch.tensor(np.array(image), requires_grad=False)
+    return torch.tensor(np.array(image), requires_grad=False).to(DEVICE)
     
 def load_wav_file(path):
     sample, _ = torchaudio.load(path)
@@ -78,4 +80,4 @@ if __name__ == "__main__":
     sample = spectrogram_to_wav(spectrogram)
     sample = torch.unsqueeze(sample, dim=0)
     print("Saving to file...")
-    torchaudio.save("temp.wav", sample, sample_rate=GTZAN_SAMPLE_RATE)
+    save_wav_to_file(sample, "temp.wav")

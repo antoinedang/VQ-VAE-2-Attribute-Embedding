@@ -19,7 +19,7 @@ from PIL import Image
 from tiff_dataset import TIFFDataset
 import numpy as np
 
-def train(epoch, loader, model, optimizer, scheduler, device):
+def train(epoch, loader, model, optimizer, scheduler, device, eval_sample_interval):
     if dist.is_primary():
         loader = tqdm(loader)
 
@@ -66,7 +66,7 @@ def train(epoch, loader, model, optimizer, scheduler, device):
                 )
             )
 
-            if i % 100 == 0:
+            if i % eval_sample_interval == 0:
                 model.eval()
 
                 random_idx = torch.randint(0, img.shape[0], size=(1,))
@@ -98,7 +98,7 @@ def main(args):
     model = VQVAE(
         in_channel=1,
         channel=128,
-        n_res_block=2*2,
+        n_res_block=2*2, # * 2 because these parameters were for 256x256 image, we are now doing 512x512
         n_res_channel=32*2,
         embed_dim=64*2,
         n_embed=512*2,
@@ -111,6 +111,13 @@ def main(args):
             output_device=dist.get_local_rank(),
         )
 
+    if args.checkpoint is not None:
+        model.load_state_dict(torch.load(args.checkpoint))
+        ckpt_filename = os.path.basename(args.checkpoint)
+        current_epochs = int(ckpt_filename.split("_")[1].split(".")[0])
+    else:
+        current_epochs = 0
+        
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     scheduler = None
     if args.sched == "cycle":
@@ -123,10 +130,10 @@ def main(args):
         )
 
     for i in range(args.epoch):
-        train(i, loader, model, optimizer, scheduler, device)
+        train(current_epochs + i, loader, model, optimizer, scheduler, device, args.eval_sample_interval)
 
         if dist.is_primary():
-            torch.save(model.state_dict(), f"{args.checkpoint_folder}/vqvae_{str(i + 1).zfill(3)}.pt")
+            torch.save(model.state_dict(), f"{args.checkpoint_folder}/vqvae_{str(current_epochs + i + 1).zfill(3)}.pt")
 
 
 if __name__ == "__main__":
@@ -148,6 +155,8 @@ if __name__ == "__main__":
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--eval-sample-folder", type=str, default="eval_samples_attr_embedding")
     parser.add_argument("--checkpoint-folder", type=str, default="checkpoints_attr_embedding")
+    parser.add_argument("--checkpoint", type=str)
+    parser.add_argument("--eval-sample-interval", type=int, default=100)
     parser.add_argument("path", type=str)
 
     args = parser.parse_args()
