@@ -1,0 +1,42 @@
+from vqvae import VQVAE
+from pixelsnail import PixelSNAIL
+
+def getVQVAE(embed_labels, device):
+    return VQVAE(
+        embed_labels=embed_labels,
+        in_channel=1,
+        channel=128,
+        n_res_block=2*2, # * 2 because these parameters were for 256x256 image, we are now doing 512x512
+        n_res_channel=32*2,
+        embed_dim=64*2,
+        n_embed=512*2,
+        device=device).to(device)
+    
+def getPixelSnailBottom():
+    return PixelSNAIL(
+        shape=[64*2, 64*2],
+        n_class=512*2,
+        channel=256 // 4,
+        kernel_size=5,
+        n_block=4 // 4,
+        n_res_block=4 // 2,
+        res_channel=256 // 2,
+        attention=False,
+        dropout=0.1,
+        n_cond_res_block=3,
+        cond_res_channel=256 // 2,
+    )
+    
+
+def getPixelSnailTop():
+    return PixelSNAIL(
+        shape=[32*2, 32*2],
+        n_class=512*2,
+        channel=256 // 4,
+        kernel_size=5,
+        n_block=4 // 4,
+        n_res_block=4 // 2,
+        res_channel=256 // 2,
+        dropout=0.1,
+        n_out_res_block=0,
+    )

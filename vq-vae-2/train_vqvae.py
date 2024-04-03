@@ -6,12 +6,10 @@ import torch
 from torch import nn, optim
 from torch.utils.data import DataLoader
 
-from torchvision import datasets, transforms, utils
-
 from tqdm import tqdm
 
-from vqvae import VQVAE
 from scheduler import CycleScheduler
+from model_definitions import getVQVAE
 import distributed as dist
 
 from PIL import Image
@@ -96,15 +94,7 @@ def main(args):
         dataset, batch_size = args.batch_size // args.n_gpu, sampler=sampler, num_workers=2
     )
 
-    model = VQVAE(
-        embed_labels=args.use_attr_embedding,
-        in_channel=1,
-        channel=128,
-        n_res_block=2*2, # * 2 because these parameters were for 256x256 image, we are now doing 512x512
-        n_res_channel=32*2,
-        embed_dim=64*2,
-        n_embed=512*2,
-        device=device).to(device)
+    model = getVQVAE(embed_labels=args.use_attr_embedding, device=device)
 
     if args.distributed:
         model = nn.parallel.DistributedDataParallel(

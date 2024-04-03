@@ -13,8 +13,8 @@ python3 ./vq-vae-2/extract_code.py --ckpt checkpoints/vqvae_045.pt AugmentedGTZA
 
 
 # ONCE LATENT EMBEDDINGS ARE EXTRACTED, WE TRAIN A PIXELSNAIL MODEL ON THE LATENT EMBEDDINGS
-python3 ./vq-vae-2/train_pixelsnail.py latent_embeddings/ # TODO
+python3 ./vq-vae-2/train_pixelsnail.py latent_embeddings
 
 
 # ONCE THE PIXELSNAIL MODELS ARE TRAINED, GENERATE NEW SAMPLES WITH
-python3 ./vq-vae-2/train_pixelsnail.py # TODO
+python3 ./vq-vae-2/sample.py blues_sample.wav --genre blues --batch 1

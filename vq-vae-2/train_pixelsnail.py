@@ -6,6 +6,8 @@ from torch import nn, optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from model_definitions import *
+
 try:
     from apex import amp
 
@@ -13,7 +15,6 @@ except ImportError:
     amp = None
 
 from dataset import LMDBDataset
-from pixelsnail import PixelSNAIL
 from scheduler import CycleScheduler
 
 from tiff_dataset import GENRES
@@ -72,16 +73,10 @@ class PixelTransform:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch', type=int, default=1)
+    parser.add_argument('--batch', type=int, default=2)
     parser.add_argument('--epoch', type=int, default=100)
     parser.add_argument('--num_classes', type=int, default=10)
     parser.add_argument('--lr', type=float, default=3e-4)
-    parser.add_argument('--channel', type=int, default=256)
-    parser.add_argument('--n_res_block', type=int, default=4)
-    parser.add_argument('--n_res_channel', type=int, default=256)
-    parser.add_argument('--n_out_res_block', type=int, default=0)
-    parser.add_argument('--n_cond_res_block', type=int, default=3)
-    parser.add_argument('--dropout', type=float, default=0.1)
     parser.add_argument('--amp', type=str, default='O0')
     parser.add_argument('--sched', type=str)
     parser.add_argument('path', type=str)
@@ -104,32 +99,9 @@ if __name__ == '__main__':
             )
 
             if hier == 'top':
-                model = PixelSNAIL(
-                    [32*2, 32*2],
-                    512*2,
-                    args.channel,
-                    5*2,
-                    4*2,
-                    args.n_res_block,
-                    args.n_res_channel,
-                    dropout=args.dropout,
-                    n_out_res_block=args.n_out_res_block,
-                )
-
+                model = getPixelSnailTop()
             elif hier == 'bottom':
-                model = PixelSNAIL(
-                    [64*2, 64*2],
-                    512*2,
-                    args.channel,
-                    5*2,
-                    4*2,
-                    args.n_res_block,
-                    args.n_res_channel,
-                    attention=False,
-                    dropout=args.dropout,
-                    n_cond_res_block=args.n_cond_res_block,
-                    cond_res_channel=args.n_res_channel,
-                )
+                model = getPixelSnailBottom()
 
             model = model.to(device)
             optimizer = optim.Adam(model.parameters(), lr=args.lr)
@@ -150,5 +122,5 @@ if __name__ == '__main__':
                 train(args, i, loader, model, optimizer, scheduler, device, hier)
                 torch.save(
                     {'model': model.module.state_dict(), 'args': args},
-                    f'checkpoint/pixelsnail_{GENRES[class_i]}_{hier}_{str(i + 1).zfill(3)}.pt',
+                    f'checkpoints/pixelsnail_{GENRES[class_i]}_{hier}_{str(i + 1).zfill(3)}.pt',
                 )

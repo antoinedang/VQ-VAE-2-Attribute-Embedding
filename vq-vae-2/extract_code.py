@@ -8,7 +8,7 @@ import lmdb
 from tqdm import tqdm
 
 from dataset import CodeRow
-from vqvae import VQVAE
+from model_definitions import getVQVAE
 
 from tiff_dataset import TIFFDataset
 
@@ -52,15 +52,7 @@ if __name__ == '__main__':
     dataset = TIFFDataset(args.path, provide_filename=True)
     loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
 
-    model = VQVAE(
-        embed_labels=False,
-        in_channel=1,
-        channel=128,
-        n_res_block=2*2, # * 2 because these parameters were for 256x256 image, we are now doing 512x512
-        n_res_channel=32*2,
-        embed_dim=64*2,
-        n_embed=512*2,
-        device=device).to(device)
+    model = getVQVAE(embed_labels=False, device=device)
     
     model.load_state_dict(torch.load(args.ckpt))
     model = model.to(device)

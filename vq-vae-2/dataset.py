@@ -45,7 +45,7 @@ class LMDBDataset(Dataset):
     def filter_labels(self, desired_class_label):
         valid_sample_indices = []
         for i in range(self.length):
-            label, _, _, _ = self.__getitem__(i)
+            label = self.__getitem__(i, only_label=True)
             if label == desired_class_label: valid_sample_indices.append(i)
         
         self.length = len(valid_sample_indices)        
@@ -54,11 +54,11 @@ class LMDBDataset(Dataset):
     def __len__(self):
         return self.length
 
-    def __getitem__(self, index):
+    def __getitem__(self, index, only_label=False):
         valid_index = self.valid_sample_indices[index]
         with self.env.begin(write=False) as txn:
             key = str(valid_index).encode('utf-8')
 
             row = pickle.loads(txn.get(key))
-
+            if only_label: return row.label
         return row.label, torch.from_numpy(row.top), torch.from_numpy(row.bottom), row.filename
