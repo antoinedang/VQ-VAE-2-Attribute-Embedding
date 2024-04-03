@@ -74,9 +74,8 @@ if __name__ == "__main__":
     random_genre = GENRES[random.randint(0, 9)]
     random_i = random.randint(0, 800)
     random_spectrogram = "AugmentedGTZAN/{}/{}_{}.tiff".format(random_genre, random_genre, random_i)
-    print("Loading image...")
+    print("Loading {} sample as image...".format(random_genre))
     spectrogram = load_spectrogram_img(random_spectrogram)
-    print("Starting conversion. (takes a while)")
     sample = spectrogram_to_wav(spectrogram)
     sample = torch.unsqueeze(sample, dim=0)
     print("Saving to file...")

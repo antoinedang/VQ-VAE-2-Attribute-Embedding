@@ -85,7 +85,8 @@ def train(epoch, loader, model, optimizer, scheduler, device, eval_sample_interv
 
 
 def main(args):
-    device = args.device
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if device == "cpu": print("WARN: CUDA not available. Training will take very long.")
 
     args.distributed = dist.get_world_size() > 1
 
@@ -153,7 +154,6 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--sched", type=str)
-    parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--eval-sample-folder", type=str, default="eval_samples")
     parser.add_argument("--checkpoint-folder", type=str, default="checkpoints")
     parser.add_argument("--checkpoint", type=str)
