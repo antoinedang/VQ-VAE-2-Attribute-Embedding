@@ -1,0 +1,1 @@
+python3 ./vq-vae-2/extract_code.py --ckpt checkpoints/vqvae_045.pt --name latent_embeddings AugmentedGTZAN/ --batch-size 16

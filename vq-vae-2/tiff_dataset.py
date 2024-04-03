@@ -12,12 +12,14 @@ def load_spectrogram_img(path):
     return torch.tensor(np.array(image))
 
 class TIFFDataset(Dataset):
-    def __init__(self, folder_path):
+    def __init__(self, folder_path, provide_filename=False):
         self.samples = []
         for i in range(len(GENRES)):
             filenames = os.listdir(folder_path + "/{}".format(GENRES[i]))
             for filename in filenames:
                 self.samples.append((folder_path + "/{}/{}".format(GENRES[i], filename), torch.tensor(i)))
+                
+        self.provide_filename = provide_filename
     
     def __len__(self):
         return len(self.samples)
@@ -25,4 +27,5 @@ class TIFFDataset(Dataset):
     def __getitem__(self, idx):
         image_path, label = self.samples[idx]
         image = load_spectrogram_img(image_path)
+        if self.provide_filename: return torch.unsqueeze(torch.log(image + 1.0), dim=0), label, image_path
         return torch.unsqueeze(torch.log(image + 1.0), dim=0), label

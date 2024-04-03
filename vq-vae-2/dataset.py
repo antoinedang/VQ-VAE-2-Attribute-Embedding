@@ -8,7 +8,7 @@ from torchvision import datasets
 import lmdb
 
 
-CodeRow = namedtuple('CodeRow', ['top', 'bottom', 'filename'])
+CodeRow = namedtuple('CodeRow', ['label', 'top', 'bottom', 'filename'])
 
 
 class ImageFileDataset(datasets.ImageFolder):
