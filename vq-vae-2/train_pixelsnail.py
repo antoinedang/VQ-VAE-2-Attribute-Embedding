@@ -16,22 +16,25 @@ from dataset import LMDBDataset
 from pixelsnail import PixelSNAIL
 from scheduler import CycleScheduler
 
+from tiff_dataset import GENRES
 
-def train(args, epoch, loader, model, optimizer, scheduler, device):
+
+def train(args, epoch, loader, model, optimizer, scheduler, device, hier):
     loader = tqdm(loader)
 
     criterion = nn.CrossEntropyLoss()
 
-    for i, (top, bottom, label) in enumerate(loader):
+    for i, (label, top, bottom, filename) in enumerate(loader):
+        
         model.zero_grad()
 
         top = top.to(device)
 
-        if args.hier == 'top':
+        if hier == 'top':
             target = top
             out, _ = model(top)
 
-        elif args.hier == 'bottom':
+        elif hier == 'bottom':
             bottom = bottom.to(device)
             target = bottom
             out, _ = model(bottom, condition=top)
@@ -69,9 +72,9 @@ class PixelTransform:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch', type=int, default=32)
+    parser.add_argument('--batch', type=int, default=16)
     parser.add_argument('--epoch', type=int, default=420)
-    parser.add_argument('--hier', type=str, default='top')
+    parser.add_argument('--num_classes', type=int, default=10)
     parser.add_argument('--lr', type=float, default=3e-4)
     parser.add_argument('--channel', type=int, default=256)
     parser.add_argument('--n_res_block', type=int, default=4)
@@ -81,75 +84,71 @@ if __name__ == '__main__':
     parser.add_argument('--dropout', type=float, default=0.1)
     parser.add_argument('--amp', type=str, default='O0')
     parser.add_argument('--sched', type=str)
-    parser.add_argument('--ckpt', type=str)
     parser.add_argument('path', type=str)
 
     args = parser.parse_args()
 
     print(args)
 
-    device = 'cuda'
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if device == "cpu": print("WARN: CUDA not available. Training will take very long.")
+    
 
-    dataset = LMDBDataset(args.path)
-    loader = DataLoader(
-        dataset, batch_size=args.batch, shuffle=True, num_workers=4, drop_last=True
-    )
+    for class_i in range(args.num_classes):
+        for hier in ['top', 'bottom']:
 
-    ckpt = {}
+            dataset = LMDBDataset(args.path, desired_class_label=class_i)
+            
+            loader = DataLoader(
+                dataset, batch_size=args.batch, shuffle=True, num_workers=0, drop_last=True
+            )
 
-    if args.ckpt is not None:
-        ckpt = torch.load(args.ckpt)
-        args = ckpt['args']
+            if hier == 'top':
+                model = PixelSNAIL(
+                    [32, 32],
+                    512,
+                    args.channel,
+                    5,
+                    4,
+                    args.n_res_block,
+                    args.n_res_channel,
+                    dropout=args.dropout,
+                    n_out_res_block=args.n_out_res_block,
+                )
 
-    if args.hier == 'top':
-        model = PixelSNAIL(
-            [32, 32],
-            512,
-            args.channel,
-            5,
-            4,
-            args.n_res_block,
-            args.n_res_channel,
-            dropout=args.dropout,
-            n_out_res_block=args.n_out_res_block,
-        )
+            elif hier == 'bottom':
+                model = PixelSNAIL(
+                    [64, 64],
+                    512,
+                    args.channel,
+                    5,
+                    4,
+                    args.n_res_block,
+                    args.n_res_channel,
+                    attention=False,
+                    dropout=args.dropout,
+                    n_cond_res_block=args.n_cond_res_block,
+                    cond_res_channel=args.n_res_channel,
+                )
 
-    elif args.hier == 'bottom':
-        model = PixelSNAIL(
-            [64, 64],
-            512,
-            args.channel,
-            5,
-            4,
-            args.n_res_block,
-            args.n_res_channel,
-            attention=False,
-            dropout=args.dropout,
-            n_cond_res_block=args.n_cond_res_block,
-            cond_res_channel=args.n_res_channel,
-        )
+            model = model.to(device)
+            optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
-    if 'model' in ckpt:
-        model.load_state_dict(ckpt['model'])
+            if amp is not None:
+                model, optimizer = amp.initialize(model, optimizer, opt_level=args.amp)
 
-    model = model.to(device)
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+            model = nn.DataParallel(model)
+            model = model.to(device)
 
-    if amp is not None:
-        model, optimizer = amp.initialize(model, optimizer, opt_level=args.amp)
+            scheduler = None
+            if args.sched == 'cycle':
+                scheduler = CycleScheduler(
+                    optimizer, args.lr, n_iter=len(loader) * args.epoch, momentum=None
+                )
 
-    model = nn.DataParallel(model)
-    model = model.to(device)
-
-    scheduler = None
-    if args.sched == 'cycle':
-        scheduler = CycleScheduler(
-            optimizer, args.lr, n_iter=len(loader) * args.epoch, momentum=None
-        )
-
-    for i in range(args.epoch):
-        train(args, i, loader, model, optimizer, scheduler, device)
-        torch.save(
-            {'model': model.module.state_dict(), 'args': args},
-            f'checkpoint/pixelsnail_{args.hier}_{str(i + 1).zfill(3)}.pt',
-        )
+            for i in range(args.epoch):
+                train(args, i, loader, model, optimizer, scheduler, device, hier)
+                torch.save(
+                    {'model': model.module.state_dict(), 'args': args},
+                    f'checkpoint/pixelsnail_{GENRES[class_i]}_{hier}_{str(i + 1).zfill(3)}.pt',
+                )

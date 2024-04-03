@@ -23,7 +23,7 @@ class ImageFileDataset(datasets.ImageFolder):
 
 
 class LMDBDataset(Dataset):
-    def __init__(self, path):
+    def __init__(self, path, desired_class_label=None):
         self.env = lmdb.open(
             path,
             max_readers=32,
@@ -39,13 +39,26 @@ class LMDBDataset(Dataset):
         with self.env.begin(write=False) as txn:
             self.length = int(txn.get('length'.encode('utf-8')).decode('utf-8'))
 
+        self.valid_sample_indices = range(self.length)
+        if desired_class_label is not None: self.filter_labels(desired_class_label)
+
+    def filter_labels(self, desired_class_label):
+        valid_sample_indices = []
+        for i in range(self.length):
+            label, _, _, _ = self.__getitem__(i)
+            if label == desired_class_label: valid_sample_indices.append(i)
+        
+        self.length = len(valid_sample_indices)        
+        self.valid_sample_indices = valid_sample_indices
+        
     def __len__(self):
         return self.length
 
     def __getitem__(self, index):
+        valid_index = self.valid_sample_indices[index]
         with self.env.begin(write=False) as txn:
-            key = str(index).encode('utf-8')
+            key = str(valid_index).encode('utf-8')
 
             row = pickle.loads(txn.get(key))
 
-        return torch.from_numpy(row.top), torch.from_numpy(row.bottom), row.filename
+        return row.label, torch.from_numpy(row.top), torch.from_numpy(row.bottom), row.filename

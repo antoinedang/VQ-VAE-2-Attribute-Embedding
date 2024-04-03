@@ -39,10 +39,9 @@ def extract(lmdb_env, loader, model, device):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--size', type=int, default=256)
     parser.add_argument('--ckpt', type=str)
-    parser.add_argument('--name', type=str)
-    parser.add_argument('--batch-size', type=int, default=128)
+    parser.add_argument('--name', type=str, default="latent_embeddings")
+    parser.add_argument('--batch-size', type=int, default=16)
     parser.add_argument('path', type=str)
 
     args = parser.parse_args()

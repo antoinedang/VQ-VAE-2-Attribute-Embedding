@@ -149,15 +149,15 @@ if __name__ == "__main__":
     )
     parser.add_argument("--dist_url", default=f"tcp://127.0.0.1:{port}")
 
-    parser.add_argument("--size", type=int, default=256)
+    parser.add_argument("--size", type=int, default=512)
     parser.add_argument("--epoch", type=int, default=560)
     parser.add_argument("--lr", type=float, default=3e-4)
-    parser.add_argument("--batch_size", type=int, default=128)
+    parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--sched", type=str)
     parser.add_argument("--eval-sample-folder", type=str, default="eval_samples")
     parser.add_argument("--checkpoint-folder", type=str, default="checkpoints")
     parser.add_argument("--checkpoint", type=str)
-    parser.add_argument("--eval-sample-interval", type=int, default=100)
+    parser.add_argument("--eval-sample-interval", type=int, default=500)
     parser.add_argument("--use-attr-embedding", action='store_true')
     parser.add_argument("path", type=str)
 
