@@ -16,7 +16,8 @@ import distributed as dist
 
 from PIL import Image
 
-from tiff_dataset import TIFFDataset, MAX_POSSIBLE_SPECTROGRAM_VALUE
+from tiff_dataset import TIFFDataset
+import numpy as np
 
 def train(epoch, loader, model, optimizer, scheduler, device):
     if dist.is_primary():
@@ -25,7 +26,7 @@ def train(epoch, loader, model, optimizer, scheduler, device):
     criterion = nn.MSELoss()
 
     latent_loss_weight = 0.25
-    attr_embedding_loss_weight = 10
+    attr_embedding_loss_weight = 1
 
     mse_sum = 0
     mse_n = 0
@@ -75,7 +76,7 @@ def train(epoch, loader, model, optimizer, scheduler, device):
                 with torch.no_grad():
                     out, _, _ = model(sample, sample_label)
                 
-                side_by_side_img = (torch.hstack([torch.squeeze(sample), torch.squeeze(out)]).cpu().numpy() + 0.5) * MAX_POSSIBLE_SPECTROGRAM_VALUE
+                side_by_side_img = np.exp(torch.hstack([torch.squeeze(sample), torch.squeeze(out)]).cpu().numpy()) - 1.0
 
                 img = Image.fromarray(side_by_side_img)
                 img.save(f"{args.eval_sample_folder}/{str(epoch + 1).zfill(5)}_{str(i).zfill(5)}.tiff", format='TIFF')
@@ -94,7 +95,14 @@ def main(args):
         dataset, batch_size = args.batch_size // args.n_gpu, sampler=sampler, num_workers=2
     )
 
-    model = VQVAE(device=device).to(device)
+    model = VQVAE(
+        in_channel=1,
+        channel=128,
+        n_res_block=2*2,
+        n_res_channel=32*2,
+        embed_dim=64*2,
+        n_embed=512*2,
+        device=device).to(device)
 
     if args.distributed:
         model = nn.parallel.DistributedDataParallel(

@@ -8,8 +8,8 @@ import os
 
 GENRES = ["blues", "classical", "country", "disco", "hiphop", "jazz", "metal", "pop", "reggae", "rock"]
 GTZAN_SAMPLE_RATE = 22050
-N_MELS = 1024
-N_FFTS = 1293
+N_MELS = 512
+N_FFTS = 2586
 SPEC_TRANSFORM = torchaudio.transforms.MelSpectrogram(sample_rate=GTZAN_SAMPLE_RATE, n_mels=N_MELS, n_fft=N_FFTS)
     
 def wav_to_spectrogram(sample):
@@ -68,7 +68,6 @@ def plot_spectrogram(spectrogram):
     plt.show()
     
 if __name__ == "__main__":
-    computeSpectrogramsMinMax("AugmentedGTZAN")
     # play a random spectrogram from the augmented dataset
     random_genre = GENRES[random.randint(0, 9)]
     random_i = random.randint(0, 800)

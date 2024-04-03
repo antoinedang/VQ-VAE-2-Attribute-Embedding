@@ -43,8 +43,9 @@ for genre in GENRES:
         
         spectrogram = wav_to_spectrogram(sample)
         
-        if spectrogram.shape[1] != 1024 or spectrogram.shape[2] != 1024:
+        if spectrogram.shape[1] != N_MELS or spectrogram.shape[2] != N_MELS:
           print("Error: invalid shape output {}".format(spectrogram.shape))
+          iterations_completed += 1
           continue
         
         save_spectrogram_img(spectrogram, output_filename)

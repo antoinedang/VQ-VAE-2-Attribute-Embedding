@@ -14,8 +14,10 @@ from vqvae import VQVAE
 from scheduler import CycleScheduler
 import distributed as dist
 
-from tiff_dataset import TIFFDataset, MAX_POSSIBLE_SPECTROGRAM_VALUE
+from tiff_dataset import TIFFDataset
 from PIL import Image
+
+import numpy as np
 
 
 def train(epoch, loader, model, optimizer, scheduler, device):
@@ -74,7 +76,7 @@ def train(epoch, loader, model, optimizer, scheduler, device):
                 with torch.no_grad():
                     out, _ = model(sample)
                 
-                side_by_side_img = (torch.hstack([torch.squeeze(sample), torch.squeeze(out)]).cpu().numpy() + 0.5) * MAX_POSSIBLE_SPECTROGRAM_VALUE
+                side_by_side_img = np.exp(torch.hstack([torch.squeeze(sample), torch.squeeze(out)]).cpu().numpy()) - 1.0
 
                 img = Image.fromarray(side_by_side_img)
                 img.save(f"{args.eval_sample_folder}/{str(epoch + 1).zfill(5)}_{str(i).zfill(5)}.tiff", format='TIFF')
@@ -92,8 +94,15 @@ def main(args):
     loader = DataLoader(
         dataset, batch_size=args.batch_size // args.n_gpu, sampler=sampler, num_workers=2
     )
-
-    model = VQVAE().to(device)
+    
+    model = VQVAE(
+        in_channel=1,
+        channel=128,
+        n_res_block=2*2, # * 2 because these parameters were for 256x256 image, we are now doing 512x512
+        n_res_channel=32*2,
+        embed_dim=64*2,
+        n_embed=512*2,
+        device=device).to(device)
 
     if args.distributed:
         model = nn.parallel.DistributedDataParallel(

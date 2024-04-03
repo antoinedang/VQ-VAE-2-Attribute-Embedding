@@ -171,7 +171,6 @@ class VQVAE(nn.Module):
         n_res_channel=32,
         embed_dim=64,
         n_embed=512,
-        decay=0.99,
         device="cuda"
     ):
         super().__init__()
@@ -239,7 +238,7 @@ class VQVAE(nn.Module):
         # apply embedding loss to quantized vector or pre-quantized vector?
         # apply to both top level and bottom level quantized vectors or no?
         embedding_vector_batches = [quant_b, quant_t]#[enc_b, enc_t] #[quant_b, quant_t]
-        bottom_margin_amplitude = 1e-3
+        bottom_margin_amplitude = 1e-5
         bottom_level_margin = torch.ones(embedding_vector_batches[0][0].shape) * bottom_margin_amplitude
         top_margin_amplitude = 1e-3
         top_level_margin = torch.ones(embedding_vector_batches[1][0].shape) * top_margin_amplitude

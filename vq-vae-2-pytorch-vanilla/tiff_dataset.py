@@ -6,7 +6,6 @@ from torch.utils.data import Dataset
 
 
 GENRES = ["blues", "classical", "country", "disco", "hiphop", "jazz", "metal", "pop", "reggae", "rock"]
-MAX_POSSIBLE_SPECTROGRAM_VALUE = 120341.6484 # calculate using utils.py
 
 def load_spectrogram_img(path):
     image = Image.open(path)
@@ -26,4 +25,4 @@ class TIFFDataset(Dataset):
     def __getitem__(self, idx):
         image_path, label = self.samples[idx]
         image = load_spectrogram_img(image_path)
-        return -0.5 + torch.unsqueeze(image, dim=0) / MAX_POSSIBLE_SPECTROGRAM_VALUE, label
+        return torch.unsqueeze(torch.log(image + 1.0), dim=0), label
