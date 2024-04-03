@@ -160,13 +160,13 @@ class GatedResBlock(nn.Module):
 
     def forward(self, input, aux_input=None, condition=None):
         out = self.conv1(self.activation(input))
-
         if aux_input is not None:
             out = out + self.aux_conv(self.activation(aux_input))
 
         out = self.activation(out)
         out = self.dropout(out)
         out = self.conv2(out)
+
 
         if condition is not None:
             condition = self.condition(condition)

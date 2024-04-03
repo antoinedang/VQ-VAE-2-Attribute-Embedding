@@ -72,8 +72,8 @@ class PixelTransform:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch', type=int, default=16)
-    parser.add_argument('--epoch', type=int, default=420)
+    parser.add_argument('--batch', type=int, default=1)
+    parser.add_argument('--epoch', type=int, default=100)
     parser.add_argument('--num_classes', type=int, default=10)
     parser.add_argument('--lr', type=float, default=3e-4)
     parser.add_argument('--channel', type=int, default=256)
@@ -105,11 +105,11 @@ if __name__ == '__main__':
 
             if hier == 'top':
                 model = PixelSNAIL(
-                    [32, 32],
-                    512,
+                    [32*2, 32*2],
+                    512*2,
                     args.channel,
-                    5,
-                    4,
+                    5*2,
+                    4*2,
                     args.n_res_block,
                     args.n_res_channel,
                     dropout=args.dropout,
@@ -118,11 +118,11 @@ if __name__ == '__main__':
 
             elif hier == 'bottom':
                 model = PixelSNAIL(
-                    [64, 64],
-                    512,
+                    [64*2, 64*2],
+                    512*2,
                     args.channel,
-                    5,
-                    4,
+                    5*2,
+                    4*2,
                     args.n_res_block,
                     args.n_res_channel,
                     attention=False,

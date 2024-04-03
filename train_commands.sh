@@ -1,3 +1,7 @@
+# AUGMENT DATA SET
+python3 augment_data.py
+
+
 # for vanilla VQ-VAE 2
 python3 ./vq-vae-2/train_vqvae.py AugmentedGTZAN/
 # for custom VQ-VAE 2 with triplet loss
