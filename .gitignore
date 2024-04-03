@@ -29,6 +29,7 @@ AugmentedGTZAN/
 original.wav
 reconstructed.wav
 temp.wav
+latent_embeddings/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
