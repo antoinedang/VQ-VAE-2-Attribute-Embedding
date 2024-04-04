@@ -7,8 +7,8 @@ GENRES = ["blues", "classical", "country", "disco", "hiphop", "jazz", "metal", "
 GTZAN_SAMPLE_RATE = 22050
 WAVEFORM_LENGTH = 30 * 22050 # 30 seconds
 
-gain_transforms = [torchaudio.transforms.Vol(g) for g in [1, 0.5, 1.5]]
-pitch_transforms = [torchaudio.transforms.PitchShift(GTZAN_SAMPLE_RATE, n) for n in [0, -2, 2]]
+gain_transforms = [torchaudio.transforms.Vol(g) for g in [1.0]]
+pitch_transforms = [torchaudio.transforms.PitchShift(GTZAN_SAMPLE_RATE, n) for n in [0]]
 
 total_augmented_samples = 0
 iterations_completed = 0
