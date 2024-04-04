@@ -90,7 +90,7 @@ if __name__ == '__main__':
     if device == "cpu": print("WARN: CUDA not available. Training will take very long.")
     
 
-    for class_i in range(args.num_classes):
+    for class_i in [1, 8]:#range(args.num_classes):
         for hier in ['top', 'bottom']:
 
             dataset = LMDBDataset(args.path, desired_class_label=class_i)

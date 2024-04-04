@@ -3,7 +3,10 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-folder_paths = [("eval_samples_0.1", "Margin Loss Weight 0.1"), ("eval_samples_10", "Margin Loss Weight 10")]
+folder_paths = [("eval_samples_0.1", "Margin Loss Weight 0.1"),
+                ("eval_samples_1", "Margin Loss Weight 1"),
+                ("eval_samples_10", "Margin Loss Weight 10")]
+                # ("eval_samples_vanilla", "Margin Loss Weight 0, No Augmentations")]
 
 max_images = 200
 
