@@ -121,7 +121,8 @@ if __name__ == '__main__':
 
             for i in range(args.epoch):
                 train(args, i, loader, model, optimizer, scheduler, device, hier)
-                torch.save(
-                    {'model': model.module.state_dict(), 'args': args},
-                    f'{args.checkpoint_folder}/pixelsnail_{GENRES[class_i]}_{hier}_{str(i + 1).zfill(3)}.pt',
-                )
+                if i == args.epoch - 1:
+                    torch.save(
+                        {'model': model.module.state_dict(), 'args': args},
+                        f'{args.checkpoint_folder}/pixelsnail_{GENRES[class_i]}_{hier}_{str(i + 1).zfill(3)}.pt',
+                    )

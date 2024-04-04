@@ -24,7 +24,7 @@ def train(epoch, loader, model, optimizer, scheduler, device, eval_sample_interv
     criterion = nn.MSELoss()
 
     latent_loss_weight = 0.25
-    attr_embedding_loss_weight = 10
+    attr_embedding_loss_weight = 1.0
 
     mse_sum = 0
     mse_n = 0
@@ -124,7 +124,7 @@ def main(args):
     for i in range(args.epoch):
         train(current_epochs + i, loader, model, optimizer, scheduler, device, args.eval_sample_interval)
 
-        if dist.is_primary():
+        if dist.is_primary() and current_epochs + i == args.epoch - 1:
             torch.save(model.state_dict(), f"{args.checkpoint_folder}/vqvae_{str(current_epochs + i + 1).zfill(3)}.pt")
 
 
