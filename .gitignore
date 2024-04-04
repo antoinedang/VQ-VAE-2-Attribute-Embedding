@@ -32,6 +32,7 @@ temp.wav
 latent_embeddings*/
 checkpoints*/
 eval_samples_*/
+eval_sample_*/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
