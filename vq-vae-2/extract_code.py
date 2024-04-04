@@ -58,7 +58,7 @@ if __name__ == '__main__':
     model = model.to(device)
     model.eval()
 
-    map_size = 100 * 1024 * 1024 * 1024
+    map_size = 1024 * 1024 * 1024
 
     env = lmdb.open(args.name, map_size=map_size)
 

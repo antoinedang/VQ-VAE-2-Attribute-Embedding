@@ -29,7 +29,9 @@ AugmentedGTZAN/
 original.wav
 reconstructed.wav
 temp.wav
-latent_embeddings/
+latent_embeddings*/
+checkpoints*/
+eval_samples_*/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

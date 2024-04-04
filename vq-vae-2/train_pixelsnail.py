@@ -76,6 +76,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch', type=int, default=2)
     parser.add_argument('--epoch', type=int, default=250)
     parser.add_argument('--num_classes', type=int, default=10)
+    parser.add_argument('--checkpoint-folder', type=str, default="checkpoints")
     parser.add_argument('--lr', type=float, default=3e-4)
     parser.add_argument('--amp', type=str, default='O0')
     parser.add_argument('--sched', type=str)
@@ -122,5 +123,5 @@ if __name__ == '__main__':
                 train(args, i, loader, model, optimizer, scheduler, device, hier)
                 torch.save(
                     {'model': model.module.state_dict(), 'args': args},
-                    f'checkpoints/pixelsnail_{GENRES[class_i]}_{hier}_{str(i + 1).zfill(3)}.pt',
+                    f'{args.checkpoint_folder}/pixelsnail_{GENRES[class_i]}_{hier}_{str(i + 1).zfill(3)}.pt',
                 )
