@@ -74,7 +74,7 @@ class PixelTransform:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch', type=int, default=2)
-    parser.add_argument('--epoch', type=int, default=250)
+    parser.add_argument('--epoch', type=int, default=500)
     parser.add_argument('--num_classes', type=int, default=10)
     parser.add_argument('--checkpoint-folder', type=str, default="checkpoints")
     parser.add_argument('--lr', type=float, default=3e-4)
