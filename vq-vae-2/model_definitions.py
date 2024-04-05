@@ -15,28 +15,28 @@ def getVQVAE(embed_labels, device):
 def getPixelSnailBottom():
     return PixelSNAIL(
         shape=[64*2, 64*2],
-        n_class=512*2,
-        channel=256 // 4,
+        n_class=1024,
         kernel_size=5,
-        n_block=4 // 4,
-        n_res_block=4 // 2,
-        res_channel=256 // 2,
         attention=False,
         dropout=0.1,
-        n_cond_res_block=3,
-        cond_res_channel=256 // 2,
+        channel=int(256 * 2),
+        n_block=int(4 * 0.5),
+        res_channel=int(256 * 2),
+        n_res_block=int(4 * 0.5),
+        cond_res_channel=int(256 * 2),
+        n_cond_res_block=int(4 * 0.5),
     )
     
 
 def getPixelSnailTop():
     return PixelSNAIL(
         shape=[32*2, 32*2],
-        n_class=512*2,
-        channel=256 // 4,
+        n_class=1024,
         kernel_size=5,
-        n_block=4 // 4,
-        n_res_block=4 // 2,
-        res_channel=256 // 2,
         dropout=0.1,
         n_out_res_block=0,
+        channel=int(256 * 2),
+        n_block=int(4 * 0.5),
+        n_res_block=int(4 * 0.5),
+        res_channel=int(256 * 2),
     )

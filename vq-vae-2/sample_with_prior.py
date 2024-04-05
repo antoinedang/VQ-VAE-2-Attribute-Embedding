@@ -4,6 +4,8 @@ import os
 import torch
 from tqdm import tqdm
 import torchaudio
+import numpy as np
+from PIL import Image
 
 from model_definitions import *
 
@@ -22,8 +24,8 @@ def sample_model(model, device, batch, size, temperature, condition=None):
     return row
 
 
-def load_model(model, genre, device):
-    all_checkpoint_filenames = os.listdir("checkpoints")
+def load_model(model, genre, device, checkpoint_folder):
+    all_checkpoint_filenames = os.listdir(checkpoint_folder)
     highest_epoch_checkpoint = None
     highest_epoch_num = -1
     for checkpoint in all_checkpoint_filenames:
@@ -34,7 +36,7 @@ def load_model(model, genre, device):
         epoch_num = int(checkpoint.split(".")[0].split("_")[-1])
         if epoch_num > highest_epoch_num: highest_epoch_checkpoint = checkpoint
         
-    ckpt = torch.load(os.path.join('checkpoints', highest_epoch_checkpoint))
+    ckpt = torch.load(os.path.join(checkpoint_folder, highest_epoch_checkpoint))
     
     if 'args' in ckpt:
         args = ckpt['args']
@@ -61,7 +63,7 @@ GTZAN_SAMPLE_RATE = 22050
 N_MELS = 512
 N_FFTS = 2586
 
-def spectrogram_to_wav(spectrogram, device):
+def spectrogram_to_wav(spectrogram):
     print("Inverting Mel Scale...")
     inverse_transform = torchaudio.transforms.InverseMelScale(n_mels=N_MELS, sample_rate=GTZAN_SAMPLE_RATE, n_stft=int((N_FFTS//2)+1)).to(device)
     spectrogram = inverse_transform(spectrogram)
@@ -77,22 +79,36 @@ if __name__ == '__main__':
     parser.add_argument('--batch', type=int, default=1)
     parser.add_argument('--genre', type=str)
     parser.add_argument('--temp', type=float, default=1.0)
+    parser.add_argument('--checkpoint-folder', type=str, default="checkpoints")
+    parser.add_argument('--num-iterations', type=int, default=5)
     parser.add_argument('filename', type=str)
 
     args = parser.parse_args()
 
-    model_vqvae = load_model('vqvae', genre=None, device=device)
-    model_top = load_model('pixelsnail_top', genre=args.genre, device=device)
-    model_bottom = load_model('pixelsnail_bottom', genre=args.genre, device=device)
+    model_vqvae = load_model('vqvae', genre=None, device=device, checkpoint_folder=args.checkpoint_folder)
+    model_top = load_model('pixelsnail_top', genre=args.genre, device=device, checkpoint_folder=args.checkpoint_folder)
+    model_bottom = load_model('pixelsnail_bottom', genre=args.genre, device=device, checkpoint_folder=args.checkpoint_folder)
 
     top_sample = sample_model(model_top, device, args.batch, [32*2, 32*2], args.temp)
     bottom_sample = sample_model(
         model_bottom, device, args.batch, [64*2, 64*2], args.temp, condition=top_sample
     )
+    
+    del model_top
+    del model_bottom
 
     decoded_sample = model_vqvae.decode_code(top_sample, bottom_sample)
     
+    del top_sample
+    del bottom_sample
+    
+    # https://arxiv.org/abs/1610.09296
+    for _ in tqdm(range(args.num_iterations-1)):
+        decoded_sample, _, _ = model_vqvae(decoded_sample, 0)
+    
     for i in range(decoded_sample.shape[0]):
-        generated_spec = torch.exp(decoded_sample[i]) - 1.0
-        waveform = spectrogram_to_wav(generated_spec.detach())   
-        torchaudio.save("generated_samples/" + args.filename, waveform.detach().cpu(), sample_rate=GTZAN_SAMPLE_RATE)
+        generated_spec = torch.tensor(np.exp(decoded_sample[i].detach().cpu().numpy()) - 1.0).to(device)
+        img = Image.fromarray(torch.squeeze(generated_spec).detach().cpu().numpy())
+        img.save("generated_samples/" + args.filename + "_" + str(i+1) + ".tiff", format='TIFF')
+        waveform = spectrogram_to_wav(generated_spec.detach())
+        torchaudio.save("generated_samples/" + args.filename + "_" + str(i+1) + ".wav", waveform.detach().cpu(), sample_rate=GTZAN_SAMPLE_RATE)

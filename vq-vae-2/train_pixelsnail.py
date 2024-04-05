@@ -52,6 +52,11 @@ def train(args, epoch, loader, model, optimizer, scheduler, device, hier):
         accuracy = correct.sum() / target.numel()
 
         lr = optimizer.param_groups[0]['lr']
+        
+        top.detach().cpu()
+        bottom.detach().cpu()
+        del top
+        del bottom
 
         loader.set_description(
             (
@@ -73,8 +78,8 @@ class PixelTransform:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch', type=int, default=2)
-    parser.add_argument('--epoch', type=int, default=500)
+    parser.add_argument('--batch', type=int, default=1)
+    parser.add_argument('--epoch', type=int, default=250)
     parser.add_argument('--num_classes', type=int, default=10)
     parser.add_argument('--checkpoint-folder', type=str, default="checkpoints")
     parser.add_argument('--lr', type=float, default=3e-4)
@@ -89,15 +94,19 @@ if __name__ == '__main__':
     device = "cuda" if torch.cuda.is_available() else "cpu"
     if device == "cpu": print("WARN: CUDA not available. Training will take very long.")
     
+    model = None
 
-    for class_i in [1, 8]:#range(args.num_classes):
-        for hier in ['top', 'bottom']:
+    for class_i in [1]:#range(args.num_classes):
+        for hier in ['bottom', 'top']:
 
             dataset = LMDBDataset(args.path, desired_class_label=class_i)
             
             loader = DataLoader(
                 dataset, batch_size=args.batch, shuffle=True, num_workers=0, drop_last=True
             )
+
+            del model
+            torch.cuda.empty_cache()
 
             if hier == 'top':
                 model = getPixelSnailTop()
