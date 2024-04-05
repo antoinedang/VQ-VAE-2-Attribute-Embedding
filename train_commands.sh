@@ -17,4 +17,4 @@ python3 ./vq-vae-2/train_pixelsnail.py latent_embeddings
 
 
 # ONCE THE PIXELSNAIL MODELS ARE TRAINED, GENERATE NEW SAMPLES WITH
-python3 ./vq-vae-2/sample.py blues_sample.wav --genre blues --batch 1
+python3 ./vq-vae-2/sample.py reggae_sample_0.1 --genre reggae --batch 5 --checkpoint-folder checkpoints_0.1
