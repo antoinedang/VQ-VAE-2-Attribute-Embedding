@@ -61,7 +61,7 @@ GTZAN_SAMPLE_RATE = 22050
 N_MELS = 512
 N_FFTS = 2586
 
-def spectrogram_to_wav(spectrogram):
+def spectrogram_to_wav(spectrogram, device):
     print("Inverting Mel Scale...")
     inverse_transform = torchaudio.transforms.InverseMelScale(n_mels=N_MELS, sample_rate=GTZAN_SAMPLE_RATE, n_stft=int((N_FFTS//2)+1)).to(device)
     spectrogram = inverse_transform(spectrogram)
