@@ -59,6 +59,8 @@ def load_model(model, genre, device, checkpoint_folder):
 
     return model
 
+device = "cuda" if torch.cuda.is_available() else "cpu"
+if device == "cpu": print("WARN: CUDA not available. Training will take very long.")
 GTZAN_SAMPLE_RATE = 22050
 N_MELS = 512
 N_FFTS = 2586
@@ -72,8 +74,6 @@ def spectrogram_to_wav(spectrogram):
     return grifflim_transform(spectrogram)
 
 if __name__ == '__main__':
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    if device == "cpu": print("WARN: CUDA not available. Training will take very long.")
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch', type=int, default=1)

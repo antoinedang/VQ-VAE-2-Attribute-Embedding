@@ -38,11 +38,3 @@ plt.ylabel('MSE')
 
 plt.legend()
 plt.show()
-
-
-
-
-
-
-
-
