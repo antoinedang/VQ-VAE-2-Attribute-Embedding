@@ -13,7 +13,7 @@ def save_spectrogram_img(spectrogram, path):
     img.save(path, format='TIFF')
 
 embedding_path = "latent_embeddings_10"
-genre = 1
+genre = 0
 model_ckpt = "checkpoints_10/vqvae_200.pt"
 different_top_bottom = True
 
@@ -34,12 +34,12 @@ vae.load_state_dict(torch.load(model_ckpt))
 decoded_sample = vae.decode_code(top.unsqueeze(0).to(device), bottom.unsqueeze(0).to(device))
 decoded_sample = torch.exp(decoded_sample) - 1.0
 
-if different_top_bottom: filename = "{}_diff_top_bottom_embedding.tiff".format(GENRES[genre])
-else: "{}_from_embedding.tiff".format(GENRES[genre])
+if different_top_bottom: filename = "{}_diff_top_bottom_embedding".format(GENRES[genre])
+else: filename = "{}_from_embedding".format(GENRES[genre])
 
-save_spectrogram_img(decoded_sample, "generated_samples/from_embedding.tiff")
+save_spectrogram_img(decoded_sample, "generated_samples/" + filename + ".tiff")
 
 waveform = spectrogram_to_wav(decoded_sample.squeeze(0).detach())
-torchaudio.save("generated_samples/from_embedding.wav", waveform.detach().cpu(), sample_rate=GTZAN_SAMPLE_RATE)
+torchaudio.save("generated_samples/" + filename + ".wav", waveform.detach().cpu(), sample_rate=GTZAN_SAMPLE_RATE)
 
 
