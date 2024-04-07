@@ -20,10 +20,14 @@ from scheduler import CycleScheduler
 from tiff_dataset import GENRES
 
 
+criterion = nn.CrossEntropyLoss()
+
 def train(args, epoch, loader, model, optimizer, scheduler, device, hier):
     loader = tqdm(loader)
 
-    criterion = nn.CrossEntropyLoss()
+    iters = 0
+    loss_sum = 0
+    acc_sum = 0
 
     for i, (label, top, bottom, filename) in enumerate(loader):
         
@@ -58,12 +62,19 @@ def train(args, epoch, loader, model, optimizer, scheduler, device, hier):
         del top
         del bottom
 
+        acc_sum += accuracy
+        loss_sum += loss.item()
+
         loader.set_description(
             (
                 f'epoch: {epoch + 1}; loss: {loss.item():.5f}; '
                 f'acc: {accuracy:.5f}; lr: {lr:.5f}'
             )
         )
+        
+        iters += 1
+        
+    return loss_sum / iters, acc_sum / iters
 
 
 class PixelTransform:
@@ -100,9 +111,12 @@ if __name__ == '__main__':
         for hier in ['bottom', 'top']:
 
             dataset = LMDBDataset(args.path, desired_class_label=class_i)
+            train_size = int(0.9 * len(dataset))
+            test_size = len(dataset) - train_size
+            train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
             
             loader = DataLoader(
-                dataset, batch_size=args.batch, shuffle=True, num_workers=0, drop_last=True
+                train_dataset, batch_size=args.batch, shuffle=True, num_workers=0, drop_last=True
             )
 
             del model
@@ -127,11 +141,63 @@ if __name__ == '__main__':
                 scheduler = CycleScheduler(
                     optimizer, args.lr, n_iter=len(loader) * args.epoch, momentum=None
                 )
+                
+            min_test_loss = 1000
+            max_test_acc = 0
 
             for i in range(args.epoch):
-                train(args, i, loader, model, optimizer, scheduler, device, hier)
-                if i == args.epoch - 1:
+                if i == 0:
+                    with open(f'{args.checkpoint_folder}/pixelsnail_{GENRES[class_i]}_{hier}_{str(i + 1).zfill(3)}_metrics.csv', 'w+') as file:
+                        file.write(f'epoch,avg_test_loss,avg_test_acc,avg_train_loss,avg_train_acc\n')
+                avg_train_loss, avg_train_acc = train(args, i, loader, model, optimizer, scheduler, device, hier)
+                
+                model.eval()
+                iters = 0
+                avg_test_loss = 0
+                avg_test_acc = 0
+
+                for _, top, bottom, _ in test_dataset:
+                    
+                    model.zero_grad()
+
+                    top = top.to(device).unsqueeze(0)
+                    if hier == 'top':
+                        target = top
+                        out, _ = model(top)
+                    elif hier == 'bottom':
+                        bottom = bottom.to(device).unsqueeze(0)
+                        target = bottom
+                        out, _ = model(bottom, condition=top)
+
+                    loss = criterion(out, target)
+
+                    _, pred = out.max(1)
+                    correct = (pred == target).float()
+                    accuracy = correct.sum() / target.numel()
+
+                    top.detach().cpu()
+                    bottom.detach().cpu()
+                    del top
+                    del bottom
+
+                    avg_test_acc += accuracy
+                    avg_test_loss += loss.item()
+
+                    iters += 1
+                
+                avg_test_acc = avg_test_acc / iters
+                avg_test_loss = avg_test_loss / iters
+                
+                with open(f'{args.checkpoint_folder}/pixelsnail_{GENRES[class_i]}_{hier}_{str(i + 1).zfill(3)}_metrics.csv', 'a+') as file:
+                    file.write(f'{i+1},{avg_test_loss},{avg_test_acc},{avg_train_loss},{avg_train_acc}\n')
+                
+                if avg_test_acc > max_test_acc or avg_test_loss < min_test_loss:
                     torch.save(
                         {'model': model.module.state_dict(), 'args': args},
                         f'{args.checkpoint_folder}/pixelsnail_{GENRES[class_i]}_{hier}_{str(i + 1).zfill(3)}.pt',
                     )
+                    
+                min_test_loss = min(avg_test_loss, min_test_loss)
+                max_test_acc = max(avg_test_acc, max_test_acc)
+                
+                model.train()

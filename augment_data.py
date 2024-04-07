@@ -7,19 +7,22 @@ GENRES = ["blues", "classical", "country", "disco", "hiphop", "jazz", "metal", "
 GTZAN_SAMPLE_RATE = 22050
 WAVEFORM_LENGTH = 30 * 22050 # 30 seconds
 
-gain_transforms = [torchaudio.transforms.Vol(g) for g in [1.0]]
-pitch_transforms = [torchaudio.transforms.PitchShift(GTZAN_SAMPLE_RATE, n) for n in [0]]
+gain_transforms = [torchaudio.transforms.Vol(g) for g in [0.75, 1.0]]
+pitch_transforms = [torchaudio.transforms.PitchShift(GTZAN_SAMPLE_RATE, n) for n in [0, 2.0]]
+
+if len(gain_transforms) <= 1 and len(pitch_transforms) <= 1: output_path = "ProcessedGTZAN"
+else: output_path = "AugmentedGTZAN"
 
 total_augmented_samples = 0
 iterations_completed = 0
 total_iterations_required = 1000 * len(gain_transforms) * len(pitch_transforms) # 1000 since GTZAN starts with 1000 samples
 
-if not os.path.exists("AugmentedGTZAN"): os.makedirs("AugmentedGTZAN")
+if not os.path.exists(output_path): os.makedirs(output_path)
 
 print("Augmenting to {} samples...".format(total_iterations_required))
 
 for genre in GENRES:
-  output_folder = "AugmentedGTZAN/{}".format(genre)
+  output_folder = "{}/{}".format(output_path, genre)
   if not os.path.exists(output_folder): os.makedirs(output_folder)
   i = 0
   raw_data_filenames = os.listdir("GTZAN/{}".format(genre))

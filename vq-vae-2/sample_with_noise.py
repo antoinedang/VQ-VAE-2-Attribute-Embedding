@@ -4,7 +4,7 @@ from model_definitions import getVQVAE
 import random
 import torch
 import torchaudio
-from sample import spectrogram_to_wav, GTZAN_SAMPLE_RATE
+from sample_with_prior import spectrogram_to_wav, GTZAN_SAMPLE_RATE
 from PIL import Image
 
 def save_spectrogram_img(spectrogram, path):
