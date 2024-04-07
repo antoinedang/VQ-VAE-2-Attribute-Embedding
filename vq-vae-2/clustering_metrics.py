@@ -4,7 +4,7 @@ from dataset import LMDBDataset
 import numpy as np
 import matplotlib.pyplot as plt
 
-embedding_paths = ["latent_embeddings_vanilla","latent_embeddings_0.1", "latent_embeddings_1", "latent_embeddings_10"]
+embedding_paths = ["latent_embeddings_vanilla","latent_embeddings_vanilla_augmented","latent_embeddings_0.1", "latent_embeddings_1", "latent_embeddings_10"]
 
 davies_top_list = []
 silhouette_top_list = []
@@ -57,7 +57,7 @@ for path in embedding_paths:
     print("Calinski Harabasz Score for Bottom Embeddings: ", calinski_harabasz_score_bottom)
 
 
-weights = ["0", "0.1", "1", "10"]
+weights = ["0", "0-augmented", "0.1", "1", "10"]
 min_weight = min(weights)
 max_weight = max(weights)
 
