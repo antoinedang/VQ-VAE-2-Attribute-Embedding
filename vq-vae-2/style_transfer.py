@@ -7,6 +7,9 @@ import torchaudio
 from sample import spectrogram_to_wav, GTZAN_SAMPLE_RATE
 from torchvision.utils import save_image
 from PIL import Image
+import librosa
+import soundfile as sf
+import noisereduce as nr
 
 def save_spectrogram_img(spectrogram, path):
     img = Image.fromarray(torch.squeeze(spectrogram).detach().cpu().numpy())
@@ -28,10 +31,9 @@ for i, (label, top, bottom, filename) in enumerate(loader):
     top_embeddings_classical.append(top)
     bottom_embeddings_classical.append(bottom)
     labels_classical.append(label.numpy().ravel())
-
-# top_embeddings_classical = np.array(top_embeddings_classical)
-# bottom_embeddings_classical = np.array(bottom_embeddings_classical)
-labels_classical = np.array(labels_classical).ravel()
+    
+    
+###########
 
 dataset_raggae = LMDBDataset(embedding_path, desired_class_label=8)
 
@@ -46,10 +48,38 @@ for i, (label, top, bottom, filename) in enumerate(loader):
     bottom_embeddings_raggae.append(bottom)
     labels_raggae.append(label.numpy().ravel())
 
-# top_embeddings_raggae = np.array(top_embeddings_raggae)
-# bottom_embeddings_raggae = np.array(bottom_embeddings_raggae)
-labels_raggae = np.array(labels_raggae).ravel()
 
+###########
+dataset_pop = LMDBDataset(embedding_path, desired_class_label=7)
+
+loader = DataLoader(dataset_pop, batch_size=1, shuffle=False, num_workers=0, drop_last=True)
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+top_embeddings_pop = []
+bottom_embeddings_pop = []
+
+for i, (label, top, bottom, filename) in enumerate(loader):
+    top_embeddings_pop.append(top)
+    bottom_embeddings_pop.append(bottom)
+    
+    
+###########
+dataset_jazz = LMDBDataset(embedding_path, desired_class_label=5)
+
+loader = DataLoader(dataset_jazz, batch_size=1, shuffle=False, num_workers=0, drop_last=True)
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+top_embeddings_jazz = []
+bottom_embeddings_jazz = []
+
+for i, (label, top, bottom, filename) in enumerate(loader):
+    top_embeddings_jazz.append(top)
+    bottom_embeddings_jazz.append(bottom)
+    
+
+## style transfer
 
 vae = getVQVAE(False, device)
 
@@ -57,13 +87,35 @@ vae.load_state_dict(torch.load("checkpoints_1/vqvae_200.pt"))
 
 vae = vae.to(device)
 
-decoded_sample = vae.decode_code(top_embeddings_classical[0].to(device), bottom_embeddings_classical[0].to(device))
+shape_top = 64
+shape_bottom = 128
+
+half_height_top = int(shape_top*0.5)
+half_height_bottom = int(shape_bottom*0.3)
+
+first_embedding = (np.array(top_embeddings_pop[10]), np.array(bottom_embeddings_pop[10]))
+second_embedding = (np.array(top_embeddings_raggae[0]), np.array(bottom_embeddings_raggae[0]))
+
+top_half_1 = np.squeeze(first_embedding[0])[:half_height_top, :]
+top_half_2 = np.squeeze(second_embedding[0])[half_height_top:, :]
+combined_top = np.concatenate([top_half_1, top_half_2], axis=0)
+
+bottom_half_1 = np.squeeze(first_embedding[1])[:half_height_bottom, :]
+bottom_half_2 = np.squeeze(second_embedding[1])[half_height_bottom:, :]
+combined_bottom = np.concatenate([bottom_half_1, bottom_half_2], axis=0)
+
+top_embeddings_style = combined_top.reshape(1, shape_top, shape_top)
+bottom_embeddings_style = combined_bottom.reshape(1, shape_bottom, shape_bottom)
+
+decoded_sample = vae.decode_code(torch.tensor(top_embeddings_style, dtype=torch.int64).to(device), torch.tensor(bottom_embeddings_style, dtype=torch.int64).to(device))
 decoded_sample = torch.exp(decoded_sample) - 1.0
-#decoded_sample = decoded_sample.clamp(-1, 1)
 
 save_spectrogram_img(decoded_sample, "generated_samples/image1.tiff")
 
 waveform = spectrogram_to_wav(decoded_sample.squeeze(0).detach(), device=device)
-torchaudio.save("generated_samples/classical_from_code.wav", waveform.detach().cpu(), sample_rate=GTZAN_SAMPLE_RATE)
+torchaudio.save("generated_samples/style_from_code.wav", waveform.detach().cpu(), sample_rate=GTZAN_SAMPLE_RATE)
 
+data, samplerate = sf.read("generated_samples/style_from_code.wav")
+y_reduced_noise = nr.reduce_noise(y=data, sr=samplerate, prop_decrease=0.6)
 
+sf.write('generated_samples/denoise.wav', y_reduced_noise, samplerate)
