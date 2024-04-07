@@ -50,7 +50,7 @@ with open(top_csv_path, 'r') as file_top, open(bottom_csv_path, 'r') as file_bot
         top_test_acc_list.append(float(avg_test_acc))
         
         epoch, avg_test_loss, avg_test_acc, avg_train_loss, avg_train_acc = bottom_line.split(",")
-        epochs.append(epoch)
+        epochs.append(int(epoch))
         bottom_train_loss_list.append(float(avg_train_loss))
         bottom_test_loss_list.append(float(avg_test_loss))
         bottom_train_acc_list.append(float(avg_train_acc))
@@ -62,6 +62,7 @@ plt.plot(epochs, bottom_test_acc_list, label="Bottom Test Acc")
 plt.plot(epochs, top_train_acc_list, label="Top Train Acc")
 plt.plot(epochs, top_test_acc_list, label="Top Test Acc")
 
+plt.ylabel('Accuracy')
 plt.xlabel('# Epochs')
 
 plt.title(label)
@@ -76,6 +77,7 @@ plt.plot(epochs, bottom_test_loss_list, label="Bottom Test Loss")
 plt.plot(epochs, top_train_loss_list, label="Top Train Loss")
 plt.plot(epochs, top_test_loss_list, label="Top Test Loss")
 
+plt.ylabel('Cross-Entropy Loss')
 plt.xlabel('# Epochs')
 
 plt.title(label)
