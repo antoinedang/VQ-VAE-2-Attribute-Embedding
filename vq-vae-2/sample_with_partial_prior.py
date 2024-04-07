@@ -8,6 +8,9 @@ import numpy as np
 from PIL import Image
 
 from model_definitions import *
+from dataset import LMDBDataset
+from tiff_dataset import GENRES
+import random
 
 @torch.no_grad()
 def sample_model(model, device, batch, size, temperature, condition=None):
@@ -80,27 +83,26 @@ if __name__ == '__main__':
     parser.add_argument('--genre', type=str)
     parser.add_argument('--temp', type=float, default=1.0)
     parser.add_argument('--checkpoint-folder', type=str, default="checkpoints")
-    parser.add_argument('--num-iterations', type=int, default=5)
+    parser.add_argument('--num-iterations', type=int, default=1)
+    parser.add_argument('--embeddings', type=str, default="latent_embeddings")
     parser.add_argument('filename', type=str)
 
     args = parser.parse_args()
 
     model_vqvae = load_model('vqvae', genre=None, device=device, checkpoint_folder=args.checkpoint_folder)
-    model_top = load_model('pixelsnail_top', genre=args.genre, device=device, checkpoint_folder=args.checkpoint_folder)
     model_bottom = load_model('pixelsnail_bottom', genre=args.genre, device=device, checkpoint_folder=args.checkpoint_folder)
 
-    top_sample = sample_model(model_top, device, args.batch, [32*2, 32*2], args.temp)
-    bottom_sample = sample_model(
-        model_bottom, device, args.batch, [64*2, 64*2], args.temp, condition=top_sample
-    )
-    
-    del model_top
-    del model_bottom
+    dataset = LMDBDataset(args.embeddings, desired_class_label=GENRES.index(args.genre))
 
+    rand_index = random.randint(0, len(dataset)-1)
+    top_sample = []
+    for _ in range(args.batch):
+        _, top, _, _ = dataset[rand_index]
+        top_sample.append(top)
+    top_sample = torch.tensor(top_sample).to(device)
+        
+    bottom_sample = sample_model(model_bottom, device, args.batch, [128, 128], args.temp, condition=top_sample)
     decoded_sample = model_vqvae.decode_code(top_sample, bottom_sample)
-    
-    del top_sample
-    del bottom_sample
     
     # https://arxiv.org/abs/1610.09296
     for _ in tqdm(range(args.num_iterations-1)):

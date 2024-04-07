@@ -80,7 +80,7 @@ if __name__ == '__main__':
     parser.add_argument('--genre', type=str)
     parser.add_argument('--temp', type=float, default=1.0)
     parser.add_argument('--checkpoint-folder', type=str, default="checkpoints")
-    parser.add_argument('--num-iterations', type=int, default=5)
+    parser.add_argument('--num-iterations', type=int, default=1)
     parser.add_argument('filename', type=str)
 
     args = parser.parse_args()
