@@ -35,7 +35,7 @@ def getPixelSnailTop():
         dropout=0.1,
         n_out_res_block=0,
         channel=int(256 * 1),
-        n_block=int(4 * 1),
-        n_res_block=int(4 * 1),
+        n_block=int(4 * 0.5),
+        n_res_block=int(4 * 0.5),
         res_channel=int(256 * 1),
     )
