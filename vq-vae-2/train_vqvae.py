@@ -151,7 +151,7 @@ if __name__ == "__main__":
     parser.add_argument("--dist_url", default=f"tcp://127.0.0.1:{port}")
 
     parser.add_argument("--size", type=int, default=512)
-    parser.add_argument("--epoch", type=int, default=200)
+    parser.add_argument("--epoch", type=int, default=50)
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--eval-sample-folder", type=str, default="eval_samples")

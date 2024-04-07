@@ -18,7 +18,7 @@ label = "Margin Loss Weight 0 w/ Augmented Data"
 # folder_path = "eval_samples_10"
 # label = "Margin Loss Weight 10"
 
-max_images = 200
+max_images = 50
 
 train_mse_list = []
 test_mse_list = []
