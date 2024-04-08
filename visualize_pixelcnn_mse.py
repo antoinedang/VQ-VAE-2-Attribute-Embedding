@@ -3,17 +3,17 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-bottom_csv_path = "checkpoints_vanilla/pixelsnail_classical_bottom_metrics.csv"
-top_csv_path = "checkpoints_vanilla/pixelsnail_classical_top_metrics.csv"
-label = "Margin Loss Weight 0"
+# bottom_csv_path = "checkpoints_vanilla/pixelsnail_classical_bottom_metrics.csv"
+# top_csv_path = "checkpoints_vanilla/pixelsnail_classical_top_metrics.csv"
+# label = "Margin Loss Weight 0"
 
 # bottom_csv_path = "checkpoints_vanilla_augmented/pixelsnail_classical_bottom_metrics.csv"
 # top_csv_path = "checkpoints_vanilla_augmented/pixelsnail_classical_top_metrics.csv"
 # label = "Margin Loss Weight 0 w/ Augmented Data"
 
-# bottom_csv_path = "checkpoints_0.1/pixelsnail_classical_bottom_metrics.csv"
-# top_csv_path = "checkpoints_0.1/pixelsnail_classical_top_metrics.csv"
-# label = "Margin Loss Weight 0.1"
+bottom_csv_path = "checkpoints_0.1/pixelsnail_classical_bottom_metrics.csv"
+top_csv_path = "checkpoints_0.1/pixelsnail_classical_top_metrics.csv"
+label = "Margin Loss Weight 0.1"
 
 # bottom_csv_path = "checkpoints_1/pixelsnail_classical_bottom_metrics.csv"
 # top_csv_path = "checkpoints_1/pixelsnail_classical_top_metrics.csv"

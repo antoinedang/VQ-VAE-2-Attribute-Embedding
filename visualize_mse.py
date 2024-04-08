@@ -9,8 +9,8 @@ label = "Margin Loss Weight 0"
 folder_path = "eval_samples_vanilla_augmented"
 label = "Margin Loss Weight 0 w/ Augmented Data"
 
-# folder_path = "eval_samples_0.1"
-# label = "Margin Loss Weight 0.1"
+folder_path = "eval_samples_0.1"
+label = "Margin Loss Weight 0.1"
 
 # folder_path = "eval_samples_1"
 # label = "Margin Loss Weight 1"
