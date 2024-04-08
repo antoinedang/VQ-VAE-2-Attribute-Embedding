@@ -32,6 +32,7 @@ def load_model(model, genre, device, checkpoint_folder):
     highest_epoch_checkpoint = None
     highest_epoch_num = -1
     for checkpoint in all_checkpoint_filenames:
+        if "metrics" in checkpoint: continue
         if model != 'vqvae' and "vae" in checkpoint: continue
         if model == 'pixelsnail_bottom' and "top" in checkpoint: continue
         if model == 'pixelsnail_top' and "bottom" in checkpoint: continue
@@ -95,11 +96,13 @@ if __name__ == '__main__':
     dataset = LMDBDataset(args.embeddings, desired_class_label=GENRES.index(args.genre))
 
     rand_index = random.randint(0, len(dataset)-1)
+    print("Using {} sample {} for top code.".format(args.genre, rand_index))
     top_sample = []
     for _ in range(args.batch):
         _, top, _, _ = dataset[rand_index]
         top_sample.append(top)
-    top_sample = torch.tensor(top_sample).to(device)
+    
+    top_sample = torch.stack(top_sample, dim=0).to(device)
         
     bottom_sample = sample_model(model_bottom, device, args.batch, [128, 128], args.temp, condition=top_sample)
     decoded_sample = model_vqvae.decode_code(top_sample, bottom_sample)

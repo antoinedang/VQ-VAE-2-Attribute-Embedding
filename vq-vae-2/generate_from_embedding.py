@@ -12,15 +12,16 @@ def save_spectrogram_img(spectrogram, path):
     img = Image.fromarray(torch.squeeze(spectrogram).detach().cpu().numpy())
     img.save(path, format='TIFF')
 
-embedding_path = "latent_embeddings_10"
-genre = 0
-model_ckpt = "checkpoints_10/vqvae_200.pt"
-different_top_bottom = True
+embedding_path = "latent_embeddings_vanilla"
+genre = 1
+model_ckpt = "checkpoints_vanilla/vqvae_200.pt"
+different_top_bottom = False
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 dataset = LMDBDataset(embedding_path, desired_class_label=genre)
 
 rand_index = random.randint(0, len(dataset)-1)
+rand_index = 50
 _, top, _, _ = dataset[rand_index]
 print("TOP INDEX", rand_index)
 

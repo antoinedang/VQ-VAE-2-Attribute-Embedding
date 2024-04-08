@@ -4,7 +4,7 @@ from model_definitions import getVQVAE
 import numpy as np
 import torch
 import torchaudio
-from sample import spectrogram_to_wav, GTZAN_SAMPLE_RATE
+from sample_with_prior import spectrogram_to_wav, GTZAN_SAMPLE_RATE
 from torchvision.utils import save_image
 from PIL import Image
 import librosa
@@ -15,7 +15,7 @@ def save_spectrogram_img(spectrogram, path):
     img = Image.fromarray(torch.squeeze(spectrogram).detach().cpu().numpy())
     img.save(path, format='TIFF')
 
-embedding_path = "latent_embeddings_1"
+embedding_path = "latent_embeddings_vanilla"
 
 dataset_classical = LMDBDataset(embedding_path, desired_class_label=1)
 
@@ -83,18 +83,18 @@ for i, (label, top, bottom, filename) in enumerate(loader):
 
 vae = getVQVAE(False, device)
 
-vae.load_state_dict(torch.load("checkpoints_1/vqvae_200.pt"))
+vae.load_state_dict(torch.load("checkpoints_vanilla/vqvae_200.pt"))
 
 vae = vae.to(device)
 
 shape_top = 64
 shape_bottom = 128
 
-half_height_top = int(shape_top*0.5)
-half_height_bottom = int(shape_bottom*0.3)
+half_height_top = int(shape_top*0.6)
+half_height_bottom = int(shape_bottom*0.4)
 
-first_embedding = (np.array(top_embeddings_pop[10]), np.array(bottom_embeddings_pop[10]))
-second_embedding = (np.array(top_embeddings_raggae[0]), np.array(bottom_embeddings_raggae[0]))
+first_embedding = (np.array(top_embeddings_pop[9]), np.array(bottom_embeddings_pop[9]))
+second_embedding = (np.array(top_embeddings_raggae[5]), np.array(bottom_embeddings_raggae[5]))
 
 top_half_1 = np.squeeze(first_embedding[0])[:half_height_top, :]
 top_half_2 = np.squeeze(second_embedding[0])[half_height_top:, :]
@@ -110,12 +110,12 @@ bottom_embeddings_style = combined_bottom.reshape(1, shape_bottom, shape_bottom)
 decoded_sample = vae.decode_code(torch.tensor(top_embeddings_style, dtype=torch.int64).to(device), torch.tensor(bottom_embeddings_style, dtype=torch.int64).to(device))
 decoded_sample = torch.exp(decoded_sample) - 1.0
 
-save_spectrogram_img(decoded_sample, "generated_samples/image1.tiff")
+save_spectrogram_img(decoded_sample, "generated_samples/style_transfer.tiff")
 
-waveform = spectrogram_to_wav(decoded_sample.squeeze(0).detach(), device=device)
-torchaudio.save("generated_samples/style_from_code.wav", waveform.detach().cpu(), sample_rate=GTZAN_SAMPLE_RATE)
+waveform = spectrogram_to_wav(decoded_sample.squeeze(0).detach())
+torchaudio.save("generated_samples/style_transfer.wav", waveform.detach().cpu(), sample_rate=GTZAN_SAMPLE_RATE)
 
-data, samplerate = sf.read("generated_samples/style_from_code.wav")
+data, samplerate = sf.read("generated_samples/style_transfer.wav")
 y_reduced_noise = nr.reduce_noise(y=data, sr=samplerate, prop_decrease=0.6)
 
-sf.write('generated_samples/denoise.wav', y_reduced_noise, samplerate)
+sf.write('generated_samples/denoised_style_transfer.wav', y_reduced_noise, samplerate)
